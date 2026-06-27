@@ -16,7 +16,10 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "outputPath": "docs",
+            "outputPath": {
+              "base": "docs",
+              "browser": ""
+            },
             "browser": "src/main.ts",
             "polyfills": [
               "zone.js"
@@ -50,8 +53,7 @@
             },
             "github-pages": {
               "outputHashing": "all",
-              "baseHref": "/matomo/",
-              "outputPath": "docs"
+              "baseHref": "/matomo/"
             },
             "development": {
               "optimization": false,
