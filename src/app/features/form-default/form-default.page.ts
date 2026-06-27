@@ -340,12 +340,7 @@ export class FormDefaultPageComponent implements OnInit {
 
     const trackedWindow = globalThis.window as MatomoWindow;
     if (Array.isArray(trackedWindow?._paq)) {
-      trackedWindow._paq.push([
-        'trackEvent',
-        event.category,
-        event.action,
-        event.value ?? 'none',
-      ]);
+      trackedWindow._paq.push(['trackEvent', event.category, event.action, event.value ?? 'none']);
     }
   }
 }
