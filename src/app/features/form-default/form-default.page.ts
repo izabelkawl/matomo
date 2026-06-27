@@ -16,6 +16,18 @@ interface AddressForm {
   description: FormControl<string>;
 }
 
+type LocalPaqCommand =
+  | ['trackEvent', string, string, string]
+  | ['setTrackerUrl', string]
+  | ['setSiteId', string]
+  | ['enableLinkTracking']
+  | ['trackPageView'];
+
+type MatomoWindow = Window & {
+  _paq?: Array<LocalPaqCommand>;
+  __matomoBootstrapped?: boolean;
+};
+
 @Component({
   selector: 'app-form-default-page',
   standalone: true,
@@ -206,6 +218,10 @@ interface AddressForm {
   `,
 })
 export class FormDefaultPageComponent implements OnInit {
+  private readonly trackerUrl = 'https://izaw.matomo.cloud/matomo.php';
+  private readonly trackerScriptSrc = 'https://cdn.matomo.cloud/izaw.matomo.cloud/matomo.js';
+  private readonly siteId = '2';
+
   protected readonly submittedMessage = signal('');
   protected readonly events = signal<FormDefaultEvent[]>([]);
 
@@ -225,7 +241,44 @@ export class FormDefaultPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.ensureMatomoInitialized();
     this.track('FORM_ENTER', 'form_open');
+  }
+
+  private ensureMatomoInitialized(): void {
+    if (!globalThis.window) {
+      return;
+    }
+
+    const trackedWindow = globalThis.window as MatomoWindow;
+
+    const matomoQueue = (trackedWindow._paq = trackedWindow._paq || []);
+    matomoQueue.push(
+      ['setTrackerUrl', this.trackerUrl],
+      ['setSiteId', this.siteId],
+      ['enableLinkTracking'],
+      ['trackPageView'],
+    );
+
+    if (trackedWindow.__matomoBootstrapped) {
+      return;
+    }
+
+    const existingScript = globalThis.document.querySelector<HTMLScriptElement>(
+      `script[src="${this.trackerScriptSrc}"]`,
+    );
+    if (existingScript) {
+      trackedWindow.__matomoBootstrapped = true;
+      return;
+    }
+
+    const script = globalThis.document.createElement('script');
+    script.async = true;
+    script.src = this.trackerScriptSrc;
+    script.onload = () => {
+      trackedWindow.__matomoBootstrapped = true;
+    };
+    globalThis.document.head.appendChild(script);
   }
 
   protected trackFocus(fieldName: 'city' | 'street' | 'description'): void {
@@ -285,8 +338,9 @@ export class FormDefaultPageComponent implements OnInit {
 
     this.events.update((events) => [event, ...events.slice(0, 9)]);
 
-    if (Array.isArray(globalThis.window?._paq)) {
-      globalThis.window._paq.push([
+    const trackedWindow = globalThis.window as MatomoWindow;
+    if (Array.isArray(trackedWindow?._paq)) {
+      trackedWindow._paq.push([
         'trackEvent',
         event.category,
         event.action,

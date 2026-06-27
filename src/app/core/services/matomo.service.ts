@@ -1,17 +1,12 @@
 import { Injectable, signal } from '@angular/core';
 import { AnalyticsEvent } from '../../models/analytics-event.model';
 
-declare global {
-  interface Window {
-    _paq?: Array<
-      | ['trackEvent', string, string, string, number?]
-      | ['setTrackerUrl', string]
-      | ['setSiteId', string]
-      | ['enableLinkTracking']
-      | ['trackPageView']
-    >;
-  }
-}
+type PaqCommand =
+  | ['trackEvent', string, string, string, number?]
+  | ['setTrackerUrl', string]
+  | ['setSiteId', string]
+  | ['enableLinkTracking']
+  | ['trackPageView'];
 
 @Injectable({
   providedIn: 'root',
@@ -22,8 +17,11 @@ export class MatomoService {
   private configured = false;
   private readonly mockMode = signal(false);
 
-  private get paq(): Window['_paq'] | undefined {
-    return globalThis.window?._paq;
+  private get paq(): Array<PaqCommand> | undefined {
+    const trackedWindow = globalThis.window as Window & {
+      _paq?: Array<PaqCommand>;
+    };
+    return trackedWindow?._paq;
   }
 
   isAvailable(): boolean {
